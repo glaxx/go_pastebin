@@ -16,7 +16,8 @@
  *
  *    Authors: Stefan Luecke <glaxx@glaxx.net>
  */
-
+ // This package offers functions to interact with the Pastebin API, for 
+ // further information check http://pastebin.com/api .
 package go_pastebin
 
 import (
@@ -48,6 +49,19 @@ type session struct {
 	api_user_key string
 }
 
+type paste struct {
+	paste_key string 'xml:"paste_key"'
+	paste_date string 'xml:"paste_date"'
+	paste_title string 'xml:"paste_title"'
+	paste_size string 'xml:"paste_size"'
+	paste_expire_date string 'xml:"paste_expire_date"'
+	paste_private string 'xml:"paste_private"'
+	paste_format_long string 'xml:"paste_format_long"'
+	paste_format_short string 'xml:"paste_format_short"'
+	paste_url string 'xml:"paste_url"'
+	paste_hits string 'xml:"paste_hits"'
+}
+
 func PasteAnonymous(paste, title, format, expire, private string) (pasteURL string, err error){
 	pasteOptions := url.Values{}
 
@@ -69,6 +83,11 @@ func PasteAnonymousSimple(paste string) (pasteURL string, err error) {
 	return request(paste_url, pasteOptions)
 }
 
+func ListTrendingPastes() (pastes[] paste, err error) {
+	
+}
+
+// This function requests (and returns) a session key object.
 func GenerateUserSession(username, password string) (se *session, err error) {
 	var s session
 	userOptions := url.Values{}
@@ -82,6 +101,14 @@ func GenerateUserSession(username, password string) (se *session, err error) {
 	}
 
 	return &s, nil
+}
+
+func (se *session) ListPastes() (pastes[] paste, err error) {
+
+}
+
+func (se *session) DeletePaste(paste_key string) (err error) {
+
 }
 
 func (s *session) Paste(paste, title, format, expire, private string) (pasteURL string, err error) {
