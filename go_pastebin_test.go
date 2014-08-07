@@ -62,3 +62,17 @@ func Test_Paste(t *testing.T) {
 		t.Log("Paste passed with URL:", ret)
 	}
 }
+
+func Test_ListPastes(t *testing.T) {
+	s, err := GenerateUserSession(test_user, test_pw)
+	if err != nil {
+		t.Error("List failed at session creation")
+	}
+	pas, errr := s.ListPastes(10)
+	if errr != nil {
+		t.Error("List failed at gathering the list")
+	} else {
+		t.Log("List passed with gathered elements:", pas)
+	}
+
+}
