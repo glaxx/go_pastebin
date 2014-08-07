@@ -86,3 +86,21 @@ func Test_ListTrendingPastes(t *testing.T)  {
 		t.Log("ListTrendingPastes passed with results:", p)
 	}
 }
+
+func Test_DeletePaste(t *testing.T) {
+	s, err := GenerateUserSession(test_user, test_pw)
+	if err != nil {
+		t.Error("DeletePaste failed at session creation")
+	}
+	pas, err := s.ListPastes(10)
+	if err != nil {
+		t.Error("DeletePaste failed at list fetch")
+	}
+	err = s.DeletePaste(pas[0].Paste_key)
+	if err != nil {
+		t.Log(err)
+		t.Error("DeletePaste failed at deleting")
+	} else {
+		t.Log("DeletePaste passed")
+	}
+}	

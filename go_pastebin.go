@@ -27,6 +27,7 @@ import (
 	"encoding/xml"
 	"time"
 	"strconv"
+	"errors"
 )
 
 const (
@@ -122,9 +123,9 @@ func GenerateUserSession(username, password string) (se *Session, err error) {
 	return &s, nil
 }
 
-func (se *Session) ListPastes(result_limit int) (pastes[] Paste, err error) {
+func (s *Session) ListPastes(result_limit int) (pastes[] Paste, err error) {
 	listOptions := url.Values{}
-	listOptions.Set("api_user_key", se.api_user_key)
+	listOptions.Set("api_user_key", s.api_user_key)
 	listOptions.Set("api_option", "list")
 	listOptions.Set("api_result_limit", strconv.Itoa(result_limit))
 	p, err := listRequest(post_url, listOptions)
@@ -135,11 +136,32 @@ func (se *Session) ListPastes(result_limit int) (pastes[] Paste, err error) {
 	}
 
 }
-/*
-func (se *Session) DeletePaste(paste_key string) (err error) {
 
+func (s *Session) DeletePaste(paste_key string) (err error) {
+	qryOptions := url.Values{}
+	qryOptions.Set("api_paste_key", paste_key)
+	qryOptions.Set("api_user_key", s.api_user_key)
+	qryOptions.Set("api_dev_key", api_dev_key)
+	qryOptions.Set("api_option", "delete")
+
+	resp, err := http.PostForm(post_url, qryOptions)
+
+	if err != nil {
+		return err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if string(body) != "Paste Removed" {
+		return errors.New(string(body))
+	} else {
+		return nil
+	}
 }
-*/
+
 func (s *Session) Paste(paste, title, format, expire, private string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 
