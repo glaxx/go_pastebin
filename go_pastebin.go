@@ -98,7 +98,7 @@ func ListTrendingPastes() (pastes[] Paste, err error) {
 	}
 }
 
-// This function pasteRequests (and returns) a Session key object.
+// This function request (and returns) a Session key object.
 func GenerateUserSession(username, password string) (se *Session, err error) {
 	var s Session
 	userOptions := url.Values{}
