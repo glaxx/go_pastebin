@@ -48,16 +48,16 @@ const (
 )
 
 type Paste struct {
-		Paste_key string `xml:"paste_key"`
-		Paste_date time.Time `xml:"paste_date"`
-		Paste_title string `xml:"paste_title"`
-		Paste_size int `xml:"paste_size"`
-		Paste_expire_date time.Time `xml:"paste_expire_date"`
-		Paste_private int `xml:"paste_private"`
-		Paste_format_long string `xml:"paste_format_long"`
-		Paste_format_short string `xml:"paste_format_short"`
-		Paste_url *url.URL `xml:"paste_url"`
-		Paste_hits int `xml:"paste_hits"`
+		Paste_key string
+		Paste_date time.Time
+		Paste_title string
+		Paste_size int
+		Paste_expire_date time.Time
+		Paste_private int 
+		Paste_format_long string 
+		Paste_format_short string 
+		Paste_url *url.URL 
+		Paste_hits int 
 }
 
 type Session struct {
@@ -84,11 +84,19 @@ func PasteAnonymousSimple(paste string) (pasteURL *url.URL, err error) {
 
 	return pasteRequest(post_url, pasteOptions)
 }
-/*
-func ListTrendingPastes() (pastes[] paste, err error) {
-	
+
+func ListTrendingPastes() (pastes[] Paste, err error) {
+	listOptions := url.Values{}
+	listOptions.Set("api_option", "trends")
+
+	p, err := listRequest(post_url, listOptions)
+	if err != nil {
+		return nil, err
+	} else {
+		return p, err
+	}
 }
-*/
+
 // This function pasteRequests (and returns) a Session key object.
 func GenerateUserSession(username, password string) (se *Session, err error) {
 	var s Session

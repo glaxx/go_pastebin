@@ -76,3 +76,13 @@ func Test_ListPastes(t *testing.T) {
 	}
 
 }
+
+func Test_ListTrendingPastes(t *testing.T)  {
+	p, err := ListTrendingPastes()
+	if err != nil {
+		t.Log(err)
+		t.Error("ListTrendingPastes failed")
+	} else {
+		t.Log("ListTrendingPastes passed with results:", p)
+	}
+}
