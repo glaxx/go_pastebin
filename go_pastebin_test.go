@@ -103,4 +103,13 @@ func Test_DeletePaste(t *testing.T) {
 	} else {
 		t.Log("DeletePaste passed")
 	}
-}	
+}
+
+func Test_PasteAnonymousBadAPIError(t *testing.T) {
+	ret, err := PasteAnonymous("wohoo", "api_test", "text", expire_10Minutes, "4")
+	if err == nil && ret != nil {
+		t.Error("PasteAnonymousBadAPIError failed")
+	} else {
+		t.Log("PasteAnonymousBadAPIError passed with err:", err)
+	}
+}

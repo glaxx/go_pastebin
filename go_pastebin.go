@@ -28,6 +28,7 @@ import (
 	"time"
 	"strconv"
 	"errors"
+	"strings"
 )
 
 const (
@@ -197,6 +198,10 @@ func pasteRequest(req_url string, options url.Values) (pasteURL *url.URL, err er
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if strings.Contains(string(body), "Bad API request") {
+		return nil, errors.New(string(body))
 	}
 
 	return url.Parse(string(body))
