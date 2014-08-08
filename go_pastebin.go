@@ -16,57 +16,57 @@
  *
  *    Authors: Stefan Luecke <glaxx@glaxx.net>
  */
- // This package offers functions to interact with the Pastebin API, for 
- // further information check http://pastebin.com/api .
+// This package offers functions to interact with the Pastebin API, for
+// further information check http://pastebin.com/api .
 package go_pastebin
 
 import (
+	"encoding/xml"
+	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/url"
-	"io/ioutil"
-	"encoding/xml"
-	"time"
 	"strconv"
-	"errors"
 	"strings"
+	"time"
 )
 
 const (
 	api_dev_key = ""
-	login_url = "http://pastebin.com/api/api_login.php"
-	post_url = "http://pastebin.com/api/api_post.php"
+	login_url   = "http://pastebin.com/api/api_login.php"
+	post_url    = "http://pastebin.com/api/api_post.php"
 
-	expire_never = "N"
+	expire_never     = "N"
 	expire_10Minutes = "10M"
-	expire_1Hour = "1H"
-	expire_1Day = "1D"
-	expire_1Week = "1W"
-	expire_2Weeks = "2W"
-	expire_1Month = "1M"
+	expire_1Hour     = "1H"
+	expire_1Day      = "1D"
+	expire_1Week     = "1W"
+	expire_2Weeks    = "2W"
+	expire_1Month    = "1M"
 
-	private_public = "0"
+	private_public   = "0"
 	private_unlisted = "1"
-	private_private = "2"
+	private_private  = "2"
 )
 
 type Paste struct {
-		Paste_key string
-		Paste_date time.Time
-		Paste_title string
-		Paste_size int
-		Paste_expire_date time.Time
-		Paste_private int 
-		Paste_format_long string 
-		Paste_format_short string 
-		Paste_url *url.URL 
-		Paste_hits int 
+	Paste_key          string
+	Paste_date         time.Time
+	Paste_title        string
+	Paste_size         int
+	Paste_expire_date  time.Time
+	Paste_private      int
+	Paste_format_long  string
+	Paste_format_short string
+	Paste_url          *url.URL
+	Paste_hits         int
 }
 
 type Session struct {
 	api_user_key string
 }
 
-func PasteAnonymous(paste, title, format, expire, private string) (pasteURL *url.URL, err error){
+func PasteAnonymous(paste, title, format, expire, private string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 
 	pasteOptions.Set("api_option", "paste")
@@ -87,7 +87,7 @@ func PasteAnonymousSimple(paste string) (pasteURL *url.URL, err error) {
 	return pasteRequest(post_url, pasteOptions)
 }
 
-func ListTrendingPastes() (pastes[] Paste, err error) {
+func ListTrendingPastes() (pastes []Paste, err error) {
 	listOptions := url.Values{}
 	listOptions.Set("api_option", "trends")
 
@@ -117,14 +117,14 @@ func GenerateUserSession(username, password string) (se *Session, err error) {
 		return nil, err
 	}
 
-	// TODO: Catch BAD API request-answers 
+	// TODO: Catch BAD API request-answers
 
 	s.api_user_key = string(body)
 
 	return &s, nil
 }
 
-func (s *Session) ListPastes(result_limit int) (pastes[] Paste, err error) {
+func (s *Session) ListPastes(result_limit int) (pastes []Paste, err error) {
 	listOptions := url.Values{}
 	listOptions.Set("api_user_key", s.api_user_key)
 	listOptions.Set("api_option", "list")
@@ -189,7 +189,6 @@ func (s *Session) PasteSimple(paste string) (pasteURL *url.URL, err error) {
 func pasteRequest(req_url string, options url.Values) (pasteURL *url.URL, err error) {
 	options.Set("api_dev_key", api_dev_key)
 
-
 	resp, err := http.PostForm(req_url, options)
 	if err != nil {
 		return nil, err
@@ -222,23 +221,21 @@ func listRequest(req_url string, options url.Values) (pastes []Paste, err error)
 
 	result := "<fckn_invalid_xml>" + string(body) + "</fckn_invalid_xml>"
 
-	
-
 	type internal_paste struct {
-		Paste_key string `xml:"paste_key"`
-		Paste_date int64 `xml:"paste_date"`
-		Paste_title string `xml:"paste_title"`
-		Paste_size int `xml:"paste_size"`
-		Paste_expire_date int64 `xml:"paste_expire_date"`
-		Paste_private int `xml:"paste_private"`
-		Paste_format_long string `xml:"paste_format_long"`
+		Paste_key          string `xml:"paste_key"`
+		Paste_date         int64  `xml:"paste_date"`
+		Paste_title        string `xml:"paste_title"`
+		Paste_size         int    `xml:"paste_size"`
+		Paste_expire_date  int64  `xml:"paste_expire_date"`
+		Paste_private      int    `xml:"paste_private"`
+		Paste_format_long  string `xml:"paste_format_long"`
 		Paste_format_short string `xml:"paste_format_short"`
-		Paste_url string `xml:"paste_url"`
-		Paste_hits int `xml:"paste_hits"`
+		Paste_url          string `xml:"paste_url"`
+		Paste_hits         int    `xml:"paste_hits"`
 	}
 	type wrapper_paste struct {
-		XMLName xml.Name `xml:"fckn_invalid_xml"`
-		Pastes []internal_paste `xml:"paste"`
+		XMLName xml.Name         `xml:"fckn_invalid_xml"`
+		Pastes  []internal_paste `xml:"paste"`
 	}
 	p := wrapper_paste{}
 

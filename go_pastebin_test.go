@@ -20,13 +20,13 @@
 package go_pastebin
 
 import (
- 	"testing"
- 	"log"
+	"log"
+	"testing"
 )
 
 const (
 	test_user = ""
-	test_pw = ""
+	test_pw   = ""
 )
 
 func Test_PasteAnonymous(t *testing.T) {
@@ -77,7 +77,7 @@ func Test_ListPastes(t *testing.T) {
 
 }
 
-func Test_ListTrendingPastes(t *testing.T)  {
+func Test_ListTrendingPastes(t *testing.T) {
 	p, err := ListTrendingPastes()
 	if err != nil {
 		t.Log(err)
