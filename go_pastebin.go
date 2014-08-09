@@ -117,7 +117,9 @@ func GenerateUserSession(username, password string) (se *Session, err error) {
 		return nil, err
 	}
 
-	// TODO: Catch BAD API request-answers
+	if strings.Contains(string(body), "Bad API request") {
+		return nil, errors.New(string(body))
+	}
 
 	s.api_user_key = string(body)
 
@@ -217,6 +219,10 @@ func listRequest(req_url string, options url.Values) (pastes []Paste, err error)
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if strings.Contains(string(body), "Bad API request") {
+		return nil, errors.New(string(body))
 	}
 
 	result := "<fckn_invalid_xml>" + string(body) + "</fckn_invalid_xml>"
