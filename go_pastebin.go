@@ -16,7 +16,7 @@
  *
  *    Authors: Stefan Luecke <glaxx@glaxx.net>
  */
-// This package offers functions to interact with the Pastebin API, for
+// go_pastebin offers functions to interact with the Pastebin API, for
 // further information check http://pastebin.com/api .
 package go_pastebin
 
@@ -66,6 +66,10 @@ type Session struct {
 	api_user_key string
 }
 
+// PasteAnonymous posts a text (paste) to Pastebin. If successfull this 
+// function will return a URL reference to the past and nil as error. 
+// format, expire and private should be set according to 
+// pastebin.com/api .
 func PasteAnonymous(paste, title, format, expire, private string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 
@@ -79,6 +83,9 @@ func PasteAnonymous(paste, title, format, expire, private string) (pasteURL *url
 	return pasteRequest(post_url, pasteOptions)
 }
 
+// PasteAnonymousSimple posts a text (paste) to Pastebin. If successfull this 
+// function will return a URL reference to the past and nil as error. 
+// title, format, expire and private are defaulted by Pastebin.
 func PasteAnonymousSimple(paste string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 	pasteOptions.Set("api_option", "paste")
@@ -87,6 +94,7 @@ func PasteAnonymousSimple(paste string) (pasteURL *url.URL, err error) {
 	return pasteRequest(post_url, pasteOptions)
 }
 
+// ListTrendingPastes request (and returns) an array of trending pastes.
 func ListTrendingPastes() (pastes []Paste, err error) {
 	listOptions := url.Values{}
 	listOptions.Set("api_option", "trends")
@@ -99,7 +107,8 @@ func ListTrendingPastes() (pastes []Paste, err error) {
 	}
 }
 
-// This function request (and returns) a Session key object.
+// GenerateUserSession request (and returns) a Session key object, which
+// is necessary for all user based tasks.
 func GenerateUserSession(username, password string) (se *Session, err error) {
 	var s Session
 	userOptions := url.Values{}
@@ -126,7 +135,12 @@ func GenerateUserSession(username, password string) (se *Session, err error) {
 	return &s, nil
 }
 
+// ListPastes request (and returns) an array of pastes, which are referenced
+// by the user. 
 func (s *Session) ListPastes(result_limit int) (pastes []Paste, err error) {
+	if result_limit < 0 || result_limit > 1000 {
+		return nil, errors.New("result_limit is out of range")
+	}
 	listOptions := url.Values{}
 	listOptions.Set("api_user_key", s.api_user_key)
 	listOptions.Set("api_option", "list")
@@ -140,6 +154,7 @@ func (s *Session) ListPastes(result_limit int) (pastes []Paste, err error) {
 
 }
 
+// DeletePaste deletes a paste, which is referenced by the paste_key. 
 func (s *Session) DeletePaste(paste_key string) (err error) {
 	qryOptions := url.Values{}
 	qryOptions.Set("api_paste_key", paste_key)
@@ -165,6 +180,10 @@ func (s *Session) DeletePaste(paste_key string) (err error) {
 	}
 }
 
+// Paste posts a text (paste) to Pastebin. If successfull this 
+// function will return a URL reference to the past and nil as error. 
+// format, expire and private should be set according to 
+// pastebin.com/api .
 func (s *Session) Paste(paste, title, format, expire, private string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 
@@ -180,6 +199,9 @@ func (s *Session) Paste(paste, title, format, expire, private string) (pasteURL 
 	return pasteRequest(post_url, pasteOptions)
 }
 
+// PasteSimple posts a text (paste) to Pastebin. If successfull this 
+// function will return a URL reference to the past and nil as error. 
+// title, format, expire and private are defaulted by Pastebin.
 func (s *Session) PasteSimple(paste string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 	pasteOptions.Set("api_option", "paste")
