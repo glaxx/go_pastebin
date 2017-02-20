@@ -48,6 +48,7 @@ const (
 	exposurePrivate  = "2"
 )
 
+// Paste represents output structure from pastebin api
 type Paste struct {
 	PasteKey         string
 	PasteDate        time.Time
@@ -61,18 +62,25 @@ type Paste struct {
 	PasteHits        int
 }
 
-type Session struct {
+// Pastebin represents pastebin session
+type Pastebin struct {
 	apiUserKey string
+	apiDevKey  string
+}
+
+// NewPastebin creates a new session and hold api keys
+func NewPastebin(apiDevKey string) Pastebin {
+	return Pastebin{apiDevKey: apiDevKey}
 }
 
 // PasteAnonymous posts a text (paste) to Pastebin. If successfull this
 // function will return a URL reference to the past and nil as error.
 // format, expire and private should be set according to
 // pastebin.com/api .
-func PasteAnonymous(apiDevKey, paste, title, format, expire, private string) (pasteURL *url.URL, err error) {
+func (pb *Pastebin) PasteAnonymous(paste, title, format, expire, private string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 
-	pasteOptions.Set("api_dev_key", apiDevKey)
+	pasteOptions.Set("api_dev_key", pb.apiDevKey)
 	pasteOptions.Set("api_option", "paste")
 	pasteOptions.Set("api_paste_code", paste)
 	pasteOptions.Set("api_paste_name", title)
@@ -86,9 +94,9 @@ func PasteAnonymous(apiDevKey, paste, title, format, expire, private string) (pa
 // PasteAnonymousSimple posts a text (paste) to Pastebin. If successfull this
 // function will return a URL reference to the past and nil as error.
 // title, format, expire and private are defaulted by Pastebin.
-func PasteAnonymousSimple(apiDevKey, apiPasteCode string) (pasteURL *url.URL, err error) {
+func (pb *Pastebin) PasteAnonymousSimple(apiPasteCode string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
-	pasteOptions.Set("api_dev_key", apiDevKey)
+	pasteOptions.Set("api_dev_key", pb.apiDevKey)
 	pasteOptions.Set("api_option", "paste")
 	pasteOptions.Set("api_paste_code", apiPasteCode)
 
@@ -96,10 +104,10 @@ func PasteAnonymousSimple(apiDevKey, apiPasteCode string) (pasteURL *url.URL, er
 }
 
 // ListTrendingPastes request (and returns) an array of trending pastes.
-func ListTrendingPastes(apiDevKey string) (pastes []Paste, err error) {
+func (pb *Pastebin) ListTrendingPastes() (pastes []Paste, err error) {
 	listOptions := url.Values{}
 	listOptions.Set("api_option", "trends")
-	listOptions.Set("api_dev_key", apiDevKey)
+	listOptions.Set("api_dev_key", pb.apiDevKey)
 
 	p, err := listRequest(postURL, listOptions)
 	if err != nil {
@@ -110,12 +118,11 @@ func ListTrendingPastes(apiDevKey string) (pastes []Paste, err error) {
 
 // GenerateUserSession request (and returns) a Session key object, which
 // is necessary for all user based tasks.
-func GenerateUserSession(apiDevKey, apiUsername, apiPassword string) (se *Session, err error) {
-	var s Session
+func (pb *Pastebin) GenerateUserSession(apiUsername, apiPassword string) (p *Pastebin, err error) {
 	userOptions := url.Values{}
 	userOptions.Set("api_user_name", apiUsername)
 	userOptions.Set("api_user_password", apiPassword)
-	userOptions.Set("api_dev_key", apiDevKey)
+	userOptions.Set("api_dev_key", pb.apiDevKey)
 
 	resp, err := http.PostForm(loginURL, userOptions)
 	if err != nil {
@@ -131,20 +138,20 @@ func GenerateUserSession(apiDevKey, apiUsername, apiPassword string) (se *Sessio
 		return nil, errors.New(string(body))
 	}
 
-	s.apiUserKey = string(body)
+	pb.apiUserKey = string(body)
 
-	return &s, nil
+	return pb, nil
 }
 
 // ListPastes request (and returns) an array of pastes, which are referenced
 // by the user.
-func (s *Session) ListPastes(apiDevKey string, resultLimit int) (pastes []Paste, err error) {
+func (pb *Pastebin) ListPastes(resultLimit int) (pastes []Paste, err error) {
 	if resultLimit < 0 || resultLimit > 1000 {
 		return nil, errors.New("resultLimit is out of range")
 	}
 	listOptions := url.Values{}
-	listOptions.Set("api_dev_key", apiDevKey)
-	listOptions.Set("api_user_key", s.apiUserKey)
+	listOptions.Set("api_dev_key", pb.apiDevKey)
+	listOptions.Set("api_user_key", pb.apiUserKey)
 	listOptions.Set("api_option", "list")
 	listOptions.Set("api_result_limit", strconv.Itoa(resultLimit))
 	p, err := listRequest(postURL, listOptions)
@@ -156,11 +163,11 @@ func (s *Session) ListPastes(apiDevKey string, resultLimit int) (pastes []Paste,
 }
 
 // DeletePaste deletes a paste, which is referenced by the paste_key.
-func (s *Session) DeletePaste(apiDevKey, apiPasteKey string) (err error) {
+func (pb *Pastebin) DeletePaste(apiPasteKey string) (err error) {
 	qryOptions := url.Values{}
 	qryOptions.Set("api_paste_key", apiPasteKey)
-	qryOptions.Set("api_user_key", s.apiUserKey)
-	qryOptions.Set("api_dev_key", apiDevKey)
+	qryOptions.Set("api_user_key", pb.apiUserKey)
+	qryOptions.Set("api_dev_key", pb.apiDevKey)
 	qryOptions.Set("api_option", "delete")
 
 	resp, err := http.PostForm(postURL, qryOptions)
@@ -184,18 +191,17 @@ func (s *Session) DeletePaste(apiDevKey, apiPasteKey string) (err error) {
 // function will return a URL reference to the past and nil as error.
 // format, expire and private should be set according to
 // pastebin.com/api .
-func (s *Session) Paste(apiDevKey, apiPasteCode, apiPasteName, apiPasteFormat, apiPasteExpire, apiPastePrivate string) (pasteURL *url.URL, err error) {
+func (pb *Pastebin) Paste(apiDevKey, apiPasteCode, apiPasteName, apiPasteFormat, apiPasteExpire, apiPastePrivate string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 
-	pasteOptions.Set("api_dev_key", apiDevKey)
+	pasteOptions.Set("api_dev_key", pb.apiDevKey)
 	pasteOptions.Set("api_option", "paste")
 	pasteOptions.Set("api_paste_code", apiPasteCode)
 	pasteOptions.Set("api_paste_name", apiPasteName)
 	pasteOptions.Set("api_paste_format", apiPasteFormat)
 	pasteOptions.Set("api_paste_expire_date", apiPasteExpire)
 	pasteOptions.Set("api_paste_private", apiPastePrivate)
-
-	pasteOptions.Set("api_user_key", s.apiUserKey)
+	pasteOptions.Set("api_user_key", pb.apiUserKey)
 
 	return pasteRequest(postURL, pasteOptions)
 }
@@ -203,9 +209,9 @@ func (s *Session) Paste(apiDevKey, apiPasteCode, apiPasteName, apiPasteFormat, a
 // PasteSimple posts a text (paste) to Pastebin. If successfull this
 // function will return a URL reference to the past and nil as error.
 // title, format, expire and private are defaulted by Pastebin.
-func (s *Session) PasteSimple(apiDevKey, apiPasteCode string) (pasteURL *url.URL, err error) {
+func (pb *Pastebin) PasteSimple(apiDevKey, apiPasteCode string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
-	pasteOptions.Set("api_dev_key", apiDevKey)
+	pasteOptions.Set("api_dev_key", pb.apiDevKey)
 	pasteOptions.Set("api_option", "paste")
 	pasteOptions.Set("api_paste_code", apiPasteCode)
 
