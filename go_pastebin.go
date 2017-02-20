@@ -32,47 +32,47 @@ import (
 )
 
 const (
-	api_dev_key = ""
-	login_url   = "http://pastebin.com/api/api_login.php"
-	post_url    = "http://pastebin.com/api/api_post.php"
+	loginURL = "http://pastebin.com/api/api_login.php"
+	postURL  = "http://pastebin.com/api/api_post.php"
 
-	expire_never     = "N"
-	expire_10Minutes = "10M"
-	expire_1Hour     = "1H"
-	expire_1Day      = "1D"
-	expire_1Week     = "1W"
-	expire_2Weeks    = "2W"
-	expire_1Month    = "1M"
+	expireNever     = "N"
+	expire10Minutes = "10M"
+	expire1Hour     = "1H"
+	expire1Day      = "1D"
+	expire1Week     = "1W"
+	expire2Weeks    = "2W"
+	expire1Month    = "1M"
 
-	private_public   = "0"
-	private_unlisted = "1"
-	private_private  = "2"
+	exposurePublic   = "0"
+	exposureUnlisted = "1"
+	exposurePrivate  = "2"
 )
 
 type Paste struct {
-	Paste_key          string
-	Paste_date         time.Time
-	Paste_title        string
-	Paste_size         int
-	Paste_expire_date  time.Time
-	Paste_private      int
-	Paste_format_long  string
-	Paste_format_short string
-	Paste_url          *url.URL
-	Paste_hits         int
+	PasteKey         string
+	PasteDate        time.Time
+	PasteTitle       string
+	PasteSize        int
+	PasteExpireDate  time.Time
+	PastePrivate     int
+	PasteFormatLong  string
+	PasteFormatShort string
+	PasteURL         *url.URL
+	PasteHits        int
 }
 
 type Session struct {
-	api_user_key string
+	apiUserKey string
 }
 
-// PasteAnonymous posts a text (paste) to Pastebin. If successfull this 
-// function will return a URL reference to the past and nil as error. 
-// format, expire and private should be set according to 
+// PasteAnonymous posts a text (paste) to Pastebin. If successfull this
+// function will return a URL reference to the past and nil as error.
+// format, expire and private should be set according to
 // pastebin.com/api .
-func PasteAnonymous(paste, title, format, expire, private string) (pasteURL *url.URL, err error) {
+func PasteAnonymous(apiDevKey, paste, title, format, expire, private string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 
+	pasteOptions.Set("api_dev_key", apiDevKey)
 	pasteOptions.Set("api_option", "paste")
 	pasteOptions.Set("api_paste_code", paste)
 	pasteOptions.Set("api_paste_name", title)
@@ -80,43 +80,44 @@ func PasteAnonymous(paste, title, format, expire, private string) (pasteURL *url
 	pasteOptions.Set("api_paste_expire_date", expire)
 	pasteOptions.Set("api_paste_private", private)
 
-	return pasteRequest(post_url, pasteOptions)
+	return pasteRequest(postURL, pasteOptions)
 }
 
-// PasteAnonymousSimple posts a text (paste) to Pastebin. If successfull this 
-// function will return a URL reference to the past and nil as error. 
+// PasteAnonymousSimple posts a text (paste) to Pastebin. If successfull this
+// function will return a URL reference to the past and nil as error.
 // title, format, expire and private are defaulted by Pastebin.
-func PasteAnonymousSimple(paste string) (pasteURL *url.URL, err error) {
+func PasteAnonymousSimple(apiDevKey, apiPasteCode string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
+	pasteOptions.Set("api_dev_key", apiDevKey)
 	pasteOptions.Set("api_option", "paste")
-	pasteOptions.Set("api_paste_code", paste)
+	pasteOptions.Set("api_paste_code", apiPasteCode)
 
-	return pasteRequest(post_url, pasteOptions)
+	return pasteRequest(postURL, pasteOptions)
 }
 
 // ListTrendingPastes request (and returns) an array of trending pastes.
-func ListTrendingPastes() (pastes []Paste, err error) {
+func ListTrendingPastes(apiDevKey string) (pastes []Paste, err error) {
 	listOptions := url.Values{}
 	listOptions.Set("api_option", "trends")
+	listOptions.Set("api_dev_key", apiDevKey)
 
-	p, err := listRequest(post_url, listOptions)
+	p, err := listRequest(postURL, listOptions)
 	if err != nil {
 		return nil, err
-	} else {
-		return p, err
 	}
+	return p, err
 }
 
 // GenerateUserSession request (and returns) a Session key object, which
 // is necessary for all user based tasks.
-func GenerateUserSession(username, password string) (se *Session, err error) {
+func GenerateUserSession(apiDevKey, apiUsername, apiPassword string) (se *Session, err error) {
 	var s Session
 	userOptions := url.Values{}
-	userOptions.Set("api_user_name", username)
-	userOptions.Set("api_user_password", password)
-	userOptions.Set("api_dev_key", api_dev_key)
+	userOptions.Set("api_user_name", apiUsername)
+	userOptions.Set("api_user_password", apiPassword)
+	userOptions.Set("api_dev_key", apiDevKey)
 
-	resp, err := http.PostForm(login_url, userOptions)
+	resp, err := http.PostForm(loginURL, userOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -130,39 +131,39 @@ func GenerateUserSession(username, password string) (se *Session, err error) {
 		return nil, errors.New(string(body))
 	}
 
-	s.api_user_key = string(body)
+	s.apiUserKey = string(body)
 
 	return &s, nil
 }
 
 // ListPastes request (and returns) an array of pastes, which are referenced
-// by the user. 
-func (s *Session) ListPastes(result_limit int) (pastes []Paste, err error) {
-	if result_limit < 0 || result_limit > 1000 {
-		return nil, errors.New("result_limit is out of range")
+// by the user.
+func (s *Session) ListPastes(apiDevKey string, resultLimit int) (pastes []Paste, err error) {
+	if resultLimit < 0 || resultLimit > 1000 {
+		return nil, errors.New("resultLimit is out of range")
 	}
 	listOptions := url.Values{}
-	listOptions.Set("api_user_key", s.api_user_key)
+	listOptions.Set("api_dev_key", apiDevKey)
+	listOptions.Set("api_user_key", s.apiUserKey)
 	listOptions.Set("api_option", "list")
-	listOptions.Set("api_result_limit", strconv.Itoa(result_limit))
-	p, err := listRequest(post_url, listOptions)
+	listOptions.Set("api_result_limit", strconv.Itoa(resultLimit))
+	p, err := listRequest(postURL, listOptions)
 	if err != nil {
 		return nil, err
-	} else {
-		return p, err
 	}
 
+	return p, err
 }
 
-// DeletePaste deletes a paste, which is referenced by the paste_key. 
-func (s *Session) DeletePaste(paste_key string) (err error) {
+// DeletePaste deletes a paste, which is referenced by the paste_key.
+func (s *Session) DeletePaste(apiDevKey, apiPasteKey string) (err error) {
 	qryOptions := url.Values{}
-	qryOptions.Set("api_paste_key", paste_key)
-	qryOptions.Set("api_user_key", s.api_user_key)
-	qryOptions.Set("api_dev_key", api_dev_key)
+	qryOptions.Set("api_paste_key", apiPasteKey)
+	qryOptions.Set("api_user_key", s.apiUserKey)
+	qryOptions.Set("api_dev_key", apiDevKey)
 	qryOptions.Set("api_option", "delete")
 
-	resp, err := http.PostForm(post_url, qryOptions)
+	resp, err := http.PostForm(postURL, qryOptions)
 
 	if err != nil {
 		return err
@@ -175,45 +176,44 @@ func (s *Session) DeletePaste(paste_key string) (err error) {
 
 	if string(body) != "Paste Removed" {
 		return errors.New(string(body))
-	} else {
-		return nil
 	}
+	return nil
 }
 
-// Paste posts a text (paste) to Pastebin. If successfull this 
-// function will return a URL reference to the past and nil as error. 
-// format, expire and private should be set according to 
+// Paste posts a text (paste) to Pastebin. If successfull this
+// function will return a URL reference to the past and nil as error.
+// format, expire and private should be set according to
 // pastebin.com/api .
-func (s *Session) Paste(paste, title, format, expire, private string) (pasteURL *url.URL, err error) {
+func (s *Session) Paste(apiDevKey, apiPasteCode, apiPasteName, apiPasteFormat, apiPasteExpire, apiPastePrivate string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 
+	pasteOptions.Set("api_dev_key", apiDevKey)
 	pasteOptions.Set("api_option", "paste")
-	pasteOptions.Set("api_paste_code", paste)
-	pasteOptions.Set("api_paste_name", title)
-	pasteOptions.Set("api_paste_format", format)
-	pasteOptions.Set("api_paste_expire_date", expire)
-	pasteOptions.Set("api_paste_private", private)
+	pasteOptions.Set("api_paste_code", apiPasteCode)
+	pasteOptions.Set("api_paste_name", apiPasteName)
+	pasteOptions.Set("api_paste_format", apiPasteFormat)
+	pasteOptions.Set("api_paste_expire_date", apiPasteExpire)
+	pasteOptions.Set("api_paste_private", apiPastePrivate)
 
-	pasteOptions.Set("api_user_key", s.api_user_key)
+	pasteOptions.Set("api_user_key", s.apiUserKey)
 
-	return pasteRequest(post_url, pasteOptions)
+	return pasteRequest(postURL, pasteOptions)
 }
 
-// PasteSimple posts a text (paste) to Pastebin. If successfull this 
-// function will return a URL reference to the past and nil as error. 
+// PasteSimple posts a text (paste) to Pastebin. If successfull this
+// function will return a URL reference to the past and nil as error.
 // title, format, expire and private are defaulted by Pastebin.
-func (s *Session) PasteSimple(paste string) (pasteURL *url.URL, err error) {
+func (s *Session) PasteSimple(apiDevKey, apiPasteCode string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
+	pasteOptions.Set("api_dev_key", apiDevKey)
 	pasteOptions.Set("api_option", "paste")
-	pasteOptions.Set("api_paste_code", paste)
+	pasteOptions.Set("api_paste_code", apiPasteCode)
 
-	return pasteRequest(post_url, pasteOptions)
+	return pasteRequest(postURL, pasteOptions)
 }
 
-func pasteRequest(req_url string, options url.Values) (pasteURL *url.URL, err error) {
-	options.Set("api_dev_key", api_dev_key)
-
-	resp, err := http.PostForm(req_url, options)
+func pasteRequest(requestURL string, options url.Values) (pasteURL *url.URL, err error) {
+	resp, err := http.PostForm(requestURL, options)
 	if err != nil {
 		return nil, err
 	}
@@ -230,10 +230,8 @@ func pasteRequest(req_url string, options url.Values) (pasteURL *url.URL, err er
 	return url.Parse(string(body))
 }
 
-func listRequest(req_url string, options url.Values) (pastes []Paste, err error) {
-	options.Set("api_dev_key", api_dev_key)
-
-	resp, err := http.PostForm(req_url, options)
+func listRequest(requestURL string, options url.Values) (pastes []Paste, err error) {
+	resp, err := http.PostForm(requestURL, options)
 	if err != nil {
 		return nil, err
 	}
@@ -249,48 +247,49 @@ func listRequest(req_url string, options url.Values) (pastes []Paste, err error)
 
 	result := "<fckn_invalid_xml>" + string(body) + "</fckn_invalid_xml>"
 
-	type internal_paste struct {
-		Paste_key          string `xml:"paste_key"`
-		Paste_date         int64  `xml:"paste_date"`
-		Paste_title        string `xml:"paste_title"`
-		Paste_size         int    `xml:"paste_size"`
-		Paste_expire_date  int64  `xml:"paste_expire_date"`
-		Paste_private      int    `xml:"paste_private"`
-		Paste_format_long  string `xml:"paste_format_long"`
-		Paste_format_short string `xml:"paste_format_short"`
-		Paste_url          string `xml:"paste_url"`
-		Paste_hits         int    `xml:"paste_hits"`
+	type internalPaste struct {
+		PasteKey         string `xml:"paste_key"`
+		PasteDate        int64  `xml:"paste_date"`
+		PasteTitle       string `xml:"paste_title"`
+		PasteSize        int    `xml:"paste_size"`
+		PasteExpireDate  int64  `xml:"paste_expire_date"`
+		PastePrivate     int    `xml:"paste_private"`
+		PasteFormatLong  string `xml:"paste_format_long"`
+		PasteFormatShort string `xml:"paste_format_short"`
+		PasteURL         string `xml:"paste_url"`
+		PasteHits        int    `xml:"paste_hits"`
 	}
-	type wrapper_paste struct {
-		XMLName xml.Name         `xml:"fckn_invalid_xml"`
-		Pastes  []internal_paste `xml:"paste"`
+	type wrapperPaste struct {
+		XMLName xml.Name        `xml:"fckn_invalid_xml"`
+		Pastes  []internalPaste `xml:"paste"`
 	}
-	p := wrapper_paste{}
+	p := wrapperPaste{}
 
 	err = xml.Unmarshal([]byte(result), &p)
 	if err != nil {
 		return nil, err
 	}
 
-	res_pastes := make([]Paste, len(p.Pastes))
+	resPastes := make([]Paste, len(p.Pastes))
 	for i, p := range p.Pastes {
-		res_pastes[i].Paste_key = p.Paste_key
-		res_pastes[i].Paste_date = time.Unix(p.Paste_date, 0)
-		res_pastes[i].Paste_title = p.Paste_title
-		res_pastes[i].Paste_size = p.Paste_size
-		if p.Paste_expire_date == 0 {
-			res_pastes[i].Paste_expire_date = time.Date(9999, time.Month(5), 23, 5, 23, 2, 3, time.UTC) // the law of fives is never wrong ;)
+		resPastes[i].PasteKey = p.PasteKey
+		resPastes[i].PasteDate = time.Unix(p.PasteDate, 0)
+		resPastes[i].PasteTitle = p.PasteTitle
+		resPastes[i].PasteSize = p.PasteSize
+		if p.PasteExpireDate == 0 {
+			resPastes[i].PasteExpireDate = time.Date(9999, time.Month(5), 23, 5, 23, 2, 3, time.UTC) // the law of fives is never wrong ;)
 		} else {
-			res_pastes[i].Paste_expire_date = time.Unix(p.Paste_expire_date, 0)
+			resPastes[i].PasteExpireDate = time.Unix(p.PasteExpireDate, 0)
 		}
-		res_pastes[i].Paste_private = p.Paste_private
-		res_pastes[i].Paste_format_long = p.Paste_format_long
-		res_pastes[i].Paste_format_short = p.Paste_format_short
-		res_pastes[i].Paste_url, err = url.Parse(p.Paste_url)
+		resPastes[i].PastePrivate = p.PastePrivate
+		resPastes[i].PasteFormatLong = p.PasteFormatLong
+		resPastes[i].PasteFormatShort = p.PasteFormatShort
+		resPastes[i].PasteURL, err = url.Parse(p.PasteURL)
 		if err != nil {
 			return nil, err
 		}
-		res_pastes[i].Paste_hits = p.Paste_hits
+		resPastes[i].PasteHits = p.PasteHits
 	}
-	return res_pastes, nil
+
+	return resPastes, nil
 }
