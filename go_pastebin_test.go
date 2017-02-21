@@ -25,12 +25,14 @@ import (
 )
 
 const (
-	test_user = ""
-	test_pw   = ""
+	testUser  = ""
+	testPass  = ""
+	apiDevKey = ""
 )
 
 func Test_PasteAnonymous(t *testing.T) {
-	ret, err := PasteAnonymous("wohoo", "api_test", "text", expire_10Minutes, private_unlisted)
+	pb := NewPastebin(apiDevKey)
+	ret, err := pb.PasteAnonymous("wohoo", "api_test", "text", expire10Minutes, exposureUnlisted)
 	if err != nil {
 		log.Println(ret, err)
 		t.Error("Paste failed, 1")
@@ -39,8 +41,20 @@ func Test_PasteAnonymous(t *testing.T) {
 	}
 }
 
+func Test_PasteAnonymousSimple(t *testing.T) {
+	pb := NewPastebin(apiDevKey)
+	ret, err := pb.PasteAnonymousSimple("wohoo")
+	if err != nil {
+		log.Println(ret, err)
+		t.Error("Paste failed, 1")
+	} else {
+		t.Log("PasteAnonymousSimple passed with URL:", ret)
+	}
+}
+
 func Test_GenerateUserSession(t *testing.T) {
-	s, err := GenerateUserSession(test_user, test_pw)
+	pb := NewPastebin(apiDevKey)
+	s, err := pb.GenerateUserSession(testUser, testPass)
 	if err != nil {
 		log.Println(err, s)
 		t.Error("GenerateUserSession failed, 1")
@@ -50,12 +64,13 @@ func Test_GenerateUserSession(t *testing.T) {
 }
 
 func Test_Paste(t *testing.T) {
-	s, err := GenerateUserSession(test_user, test_pw)
+	pb := NewPastebin(apiDevKey)
+	s, err := pb.GenerateUserSession(testUser, testPass)
 	if err != nil {
 		t.Error("Paste failed at session creation")
 	}
 
-	ret, err := s.Paste("wohoo", "api_test", "text", expire_10Minutes, private_unlisted)
+	ret, err := s.Paste(apiDevKey, "wohoo", "api_test", "text", expire10Minutes, exposureUnlisted)
 	if err != nil {
 		t.Error("Paste fialed at pasting")
 	} else {
@@ -64,21 +79,22 @@ func Test_Paste(t *testing.T) {
 }
 
 func Test_ListPastes(t *testing.T) {
-	s, err := GenerateUserSession(test_user, test_pw)
+	pb := NewPastebin(apiDevKey)
+	s, err := pb.GenerateUserSession(testUser, testPass)
 	if err != nil {
 		t.Error("List failed at session creation")
 	}
-	pas, errr := s.ListPastes(10)
-	if errr != nil {
+	pas, err := s.ListPastes(10)
+	if err != nil {
 		t.Error("List failed at gathering the list")
 	} else {
 		t.Log("List passed with gathered elements:", pas)
 	}
-
 }
 
 func Test_ListTrendingPastes(t *testing.T) {
-	p, err := ListTrendingPastes()
+	pb := NewPastebin(apiDevKey)
+	p, err := pb.ListTrendingPastes()
 	if err != nil {
 		t.Log(err)
 		t.Error("ListTrendingPastes failed")
@@ -88,15 +104,16 @@ func Test_ListTrendingPastes(t *testing.T) {
 }
 
 func Test_DeletePaste(t *testing.T) {
-	s, err := GenerateUserSession(test_user, test_pw)
+	pb := NewPastebin(apiDevKey)
+	p, err := pb.GenerateUserSession(testUser, testPass)
 	if err != nil {
 		t.Error("DeletePaste failed at session creation")
 	}
-	pas, err := s.ListPastes(10)
+	pas, err := p.ListPastes(10)
 	if err != nil {
 		t.Error("DeletePaste failed at list fetch")
 	}
-	err = s.DeletePaste(pas[0].Paste_key)
+	err = pb.DeletePaste(pas[0].PasteKey)
 	if err != nil {
 		t.Log(err)
 		t.Error("DeletePaste failed at deleting")
@@ -106,8 +123,9 @@ func Test_DeletePaste(t *testing.T) {
 }
 
 func Test_PasteAnonymousBadAPIError(t *testing.T) {
-	ret, err := PasteAnonymous("wohoo", "api_test", "text", expire_10Minutes, "4")
-	if err == nil && ret != nil {
+	pb := NewPastebin(apiDevKey)
+	ret, err := pb.PasteAnonymous("wohoo", "api_test", "text", expire10Minutes, "4")
+	if err != nil && ret == nil {
 		t.Error("PasteAnonymousBadAPIError failed")
 	} else {
 		t.Log("PasteAnonymousBadAPIError passed with err:", err)
