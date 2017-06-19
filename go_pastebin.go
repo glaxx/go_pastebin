@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	loginURL = "http://pastebin.com/api/api_login.php"
-	postURL  = "http://pastebin.com/api/api_post.php"
+	loginURL = "https://pastebin.com/api/api_login.php"
+	postURL  = "https://pastebin.com/api/api_post.php"
 
 	expireNever     = "N"
 	expire10Minutes = "10M"
@@ -191,7 +191,7 @@ func (pb *Pastebin) DeletePaste(apiPasteKey string) (err error) {
 // function will return a URL reference to the past and nil as error.
 // format, expire and private should be set according to
 // pastebin.com/api .
-func (pb *Pastebin) Paste(apiDevKey, apiPasteCode, apiPasteName, apiPasteFormat, apiPasteExpire, apiPastePrivate string) (pasteURL *url.URL, err error) {
+func (pb *Pastebin) Paste(apiPasteCode, apiPasteName, apiPasteFormat, apiPasteExpire, apiPastePrivate string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 
 	pasteOptions.Set("api_dev_key", pb.apiDevKey)
@@ -209,11 +209,12 @@ func (pb *Pastebin) Paste(apiDevKey, apiPasteCode, apiPasteName, apiPasteFormat,
 // PasteSimple posts a text (paste) to Pastebin. If successfull this
 // function will return a URL reference to the past and nil as error.
 // title, format, expire and private are defaulted by Pastebin.
-func (pb *Pastebin) PasteSimple(apiDevKey, apiPasteCode string) (pasteURL *url.URL, err error) {
+func (pb *Pastebin) PasteSimple(apiPasteCode string) (pasteURL *url.URL, err error) {
 	pasteOptions := url.Values{}
 	pasteOptions.Set("api_dev_key", pb.apiDevKey)
 	pasteOptions.Set("api_option", "paste")
 	pasteOptions.Set("api_paste_code", apiPasteCode)
+	pasteOptions.Set("api_user_key", pb.apiUserKey)
 
 	return pasteRequest(postURL, pasteOptions)
 }
@@ -229,8 +230,16 @@ func pasteRequest(requestURL string, options url.Values) (pasteURL *url.URL, err
 		return nil, err
 	}
 
+	// Inline function to process the rare case of "Post Limit" error
+	// Looks like: Post%20limit,%20maximum%20pastes%20per%2024h%20reached
+	urlFilter := func(url string) string {
+		return strings.Join(strings.Split(url, "%20"), " ")
+	}
+
 	if strings.Contains(string(body), "Bad API request") {
 		return nil, errors.New(string(body))
+	} else if strings.Contains(urlFilter(string(body)), "Post Limit") {
+		return nil, errors.New(urlFilter(string(body)))
 	}
 
 	return url.Parse(string(body))
