@@ -238,7 +238,7 @@ func pasteRequest(requestURL string, options url.Values) (pasteURL *url.URL, err
 
 	if strings.Contains(string(body), "Bad API request") {
 		return nil, errors.New(string(body))
-	} else if strings.Contains(urlFilter(string(body)), "Post Limit") {
+	} else if strings.Contains(urlFilter(string(body)), "Post limit") {
 		return nil, errors.New(urlFilter(string(body)))
 	}
 
